@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dragones - Sistema de Pagos</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #6a0dad;
+            color: white;
+        }
+        .container {
+            background-color: white;
+            max-width: 400px;
+            margin: 20px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            color: #333;
+        }
+        .app-title {
+            color: #6a0dad;
+            text-align: center;
+            margin-bottom: 5px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .welcome-message {
+            text-align: center;
+            color: #ff7b00;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        .balance {
+            background-color: #f3e5ff;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #6a0dad;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        input:focus, select:focus {
+            border-color: #ff7b00;
+            outline: none;
+        }
+        button {
+            background-color: #ff7b00;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #e67300;
+        }
+        button.secondary {
+            background-color: #6a0dad;
+        }
+        .notification {
+            background-color: #f3e5ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            color: #6a0dad;
+        }
+        .admin-notification {
+            background-color: #e6f7ff;
+            border-left: 4px solid #0066cc;
+        }
+        .tab {
+            display: none;
+        }
+        .tab.active {
+            display: block;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 15px;
+            gap: 5px;
+        }
+        .tab-button {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: #ddd;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .tab-button.active {
+            background: #ff7b00;
+            color: white;
+        }
+        .admin-section {
+            border-top: 2px solid #6a0dad;
+            margin-top: 20px;
+            padding-top: 20px;
+        }
+        .user-list {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .manga-promo {
+            border: 2px dashed #ff7b00;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            background-color: #fff9f0;
+        }
+        .manga-cover {
+            width: 100%;
+            height: 150px;
+            background-color: #f3e5ff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6a0dad;
+            font-style: italic;
+            border-radius: 5px;
+            background-image: url('https://via.placeholder.com/300x150/6a0dad/ffffff?text=Hamo-chan');
+            background-size: cover;
+        }
+        .manga-title {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            color: #ff7b00;
+            text-align: center;
+            margin: 15px 0;
+            font-size: 22px;
+        }
+        .price-tag {
+            display: inline-block;
+            background: #6a0dad;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        .promo-code-section {
+            border: 2px dashed #6a0dad;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .promo-code-input {
+            margin: 10px 0;
+            padding: 8px;
+            width: 70%;
+            border: 2px solid #ff7b00;
+            border-radius: 5px;
+        }
+        .promo-code-btn {
+            background-color: #6a0dad;
+            width: auto;
+            padding: 8px 15px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Pantalla de Login -->
+        <div id="login">
+            <div class="app-title">Dragones</div>
+            <div class="welcome-message">Sistema de pagos con dragos</div>
+            
+            <div class="input-group">
+                <label>Código de usuario</label>
+                <input type="text" id="username" placeholder="Ingresa tu código">
+            </div>
+            
+            <div class="input-group">
+                <label>Clave</label>
+                <input type="password" id="password" placeholder="Ingresa tu clave">
+            </div>
+            
+            <button onclick="login()">Ingresar</button>
+            
+            <div class="notification" id="message" style="display:none;"></div>
+        </div>
+        
+        <!-- Pantalla Principal -->
+        <div id="main" style="display: none;">
+            <div class="app-title">Dragones</div>
+            <div class="welcome-message" id="welcome-user">Bienvenido</div>
+            
+            <div class="balance" id="balance-display">
+                1000 dragos
+            </div>
+            
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="openTab(event, 'transferencias')">Transferir</button>
+                <button class="tab-button" onclick="openTab(event, 'historial')">Historial</button>
+                <button class="tab-button" onclick="openTab(event, 'promociones')">Promociones</button>
+            </div>
+            
+            <!-- Pestaña de Transferencias -->
+            <div id="transferencias" class="tab active">
+                <div class="input-group">
+                    <label>Destinatario</label>
+                    <input type="text" id="recipient" placeholder="Código de usuario">
+                </div>
+                
+                <div class="input-group">
+                    <label>Cantidad (drags)</label>
+                    <input type="number" id="amount">
+                </div>
+                
+                <div class="input-group">
+                    <label>Fronsteria (Concepto)</label>
+                    <select id="concept">
+                        <option value="pago-servicios">Pago de servicios</option>
+                        <option value="transferencia">Transferencia personal</option>
+                        <option value="regalo">Regalo</option>
+                        <option value="negocios">Negocios</option>
+                        <option value="manga">Pago por manga</option>
+                    </select>
+                </div>
+                
+                <button onclick="makeTransfer()">Transferir</button>
+                
+                <div id="transfer-message" class="notification" style="display:none;"></div>
+            </div>
+            
+            <!-- Pestaña de Historial -->
+            <div id="historial" class="tab">
+                <div id="history-container"></div>
+            </div>
+            
+            <!-- Pestaña de Promociones -->
+            <div id="promociones" class="tab">
+                <div class="manga-title">Hamo-chan</div>
+                <div class="manga-promo">
+                    <div class="manga-cover"></div>
+                    <h3>Manga Semanal</h3>
+                    <p>✨ <strong>Edición anticipada:</strong> Miércoles <span class="price-tag">600 dragos</span></p>
+                    <p>📚 <strong>Edición regular:</strong> Jueves <span class="price-tag">400 dragos</span></p>
+                    
+                    <div class="input-group">
+                        <label>Selecciona edición:</label>
+                        <select id="manga-edition">
+                            <option value="adelantado">Miércoles - Edición anticipada (600 dragos)</option>
+                            <option value="regular">Jueves - Edición regular (400 dragos)</option>
+                        </select>
+                    </div>
+                    
+                    <button onclick="comprarManga()">¡Quiero mi Hamo-chan!</button>
+                </div>
+                
+                <div class="promo-code-section">
+                    <h3>Canjear Código Promocional</h3>
+                    <input type="text" class="promo-code-input" id="promo-code" placeholder="Ingresa tu código">
+                    <button class="promo-code-btn" onclick="redeemCode()">Canjear</button>
+                    <p id="code-message" style="display:none; margin-top:10px;"></p>
+                </div>
+                
+                <div class="notification">
+                    <strong>Otras promociones:</strong>
+                    <p>🎉 Gana 50 dragos extra por cada 3 transferencias este mes</p>
+                </div>
+            </div>
+            
+            <!-- Notificaciones -->
+            <div id="notifications-container" style="margin-top: 20px;">
+                <h3>Notificaciones</h3>
+            </div>
+            
+            <!-- Sección de Administración -->
+            <div id="admin-section" class="admin-section" style="display:none;">
+                <h3>Panel de Administración</h3>
+                
+                <div class="input-group">
+                    <label>Nuevo usuario</label>
+                    <input type="text" id="new-username" placeholder="Código de usuario">
+                </div>
+                
+                <div class="input-group">
+                    <label>Clave</label>
+                    <input type="password" id="new-password" placeholder="Nueva clave">
+                </div>
+                
+                <button class="secondary" onclick="createUser()">Crear cuenta</button>
+                
+                <h4 style="margin-top:20px;">Usuarios registrados</h4>
+                <div class="user-list" id="users-list"></div>
+                
+                <div id="admin-notifications-container" style="margin-top: 15px;">
+                    <h4>Actividad del sistema</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Datos de la aplicación
+        const ADMIN_USER = "admin";
+        const ADMIN_PASS = "admin123";
+        
+        // Base de datos simulada
+        let users = {
+            "admin": { password: ADMIN_PASS, balance: 5000, isAdmin: true },
+            "usuario1": { password: "clave123", balance: 1000, isAdmin: false }
+        };
+        
+        let currentUser = "";
+        let transactions = [];
+        
+        // Función para cambiar entre pestañas
+        function openTab(event, tabName) {
+            const tabs = document.getElementsByClassName('tab');
+            for (let tab of tabs) {
+                tab.classList.remove('active');
+            }
+            
+            const tabButtons = document.getElementsByClassName('tab-button');
+            for (let button of tabButtons) {
+                button.classList.remove('active');
+            }
+            
+            document.getElementById(tabName).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            if(tabName === 'historial') {
+                updateHistory();
+            }
+        }
+        
+        // Función de login
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const message = document.getElementById('message');
+            
+            if(users[username] && users[username].password === password) {
+                currentUser = username;
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('main').style.display = 'block';
+                document.getElementById('welcome-user').textContent = `Bienvenido, ${username}`;
+                updateBalanceDisplay();
+                message.style.display = 'none';
+                
+                if(users[username].isAdmin) {
+                    document.getElementById('admin-section').style.display = 'block';
+                    updateUsersList();
+                }
+                
+                addNotification(`¡Bienvenido ${username}! Tu saldo es ${users[currentUser].balance} dragos`);
+            } else {
+                message.textContent = "Usuario o clave incorrectos";
+                message.style.display = 'block';
+            }
+        }
+        
+        // Función para comprar manga Hamo-chan
+        function comprarManga() {
+            const edition = document.getElementById('manga-edition').value;
+            const cost = edition === 'adelantado' ? 600 : 400;
+            const day = edition === 'adelantado' ? 'miércoles' : 'jueves';
+            const typeName = edition === 'adelantado' ? 'edición anticipada' : 'edición regular';
+            
+            if(users[currentUser].balance < cost) {
+                addNotification(`❌ Saldo insuficiente. Necesitas ${cost} dragos para la ${typeName}`);
+                return;
+            }
+            
+            users[currentUser].balance -= cost;
+            updateBalanceDisplay();
+            
+            const transaction = {
+                date: new Date().toLocaleString(),
+                from: currentUser,
+                to: "Hamo-chan Manga",
+                amount: cost,
+                concept: "manga-" + edition
+            };
+            
+            transactions.push(transaction);
+            updateHistory();
+            
+            addNotification(`✅ ¡Compra exitosa! Hamo-chan (${typeName}) para el ${day} por ${cost} dragos`);
+            
+            if(users[currentUser]?.isAdmin) {
+                addAdminNotification(`📦 ${currentUser} compró Hamo-chan (${typeName})`);
+            }
+        }
+        
+        // Función para canjear códigos promocionales
+        function redeemCode() {
+            const code = document.getElementById('promo-code').value;
+            const message = document.getElementById('code-message');
+            
+            // Verificar código (puedes agregar más códigos aquí)
+            if(code === "DRAGON2023") {
+                users[currentUser].balance += 200;
+                updateBalanceDisplay();
+                message.textContent = "¡Código canjeado! +200 dragos añadidos";
+                message.style.color = "#4CAF50";
+                
+                // Redirigir después de 2 segundos
+                setTimeout(() => {
+                    window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+                }, 2000);
+            } 
+            else if(code === "HAMOCHAN") {
+                users[currentUser].balance += 100;
+                updateBalanceDisplay();
+                message.textContent = "¡Código especial Hamo-chan! +100 dragos";
+                message.style.color = "#4CAF50";
+            }
+            else {
+                message.textContent = "Código inválido o ya canjeado";
+                message.style.color = "#f44336";
+            }
+            
+            message.style.display = "block";
+            document.getElementById('promo-code').value = "";
+        }
+        
+        // Función para transferencias
+        function makeTransfer() {
+            const recipient = document.getElementById('recipient').value;
+            const amount = parseFloat(document.getElementById('amount').value);
+            const concept = document.getElementById('concept').value;
+            const message = document.getElementById('transfer-message');
+            
+            if(!recipient || !amount || amount <= 0) {
+                message.textContent = "Completa todos los campos correctamente";
+                message.style.display = 'block';
+                return;
+            }
+            
+            if(amount > users[currentUser].balance) {
+                message.textContent = "Saldo insuficiente";
+                message.style.display = 'block';
+                return;
+            }
+            
+            if(!users[recipient]) {
+                message.textContent = "El destinatario no existe";
+                message.style.display = 'block';
+                return;
+            }
+            
+            users[currentUser].balance -= amount;
+            users[recipient].balance += amount;
+            
+            const transaction = {
+                date: new Date().toLocaleString(),
+                from: currentUser,
+                to: recipient,
+                amount: amount,
+                concept: concept
+            };
+            
+            transactions.push(transaction);
+            updateBalanceDisplay();
+            updateHistory();
+            
+            message.textContent = `Transferiste ${amount} dragos a ${recipient}`;
+            message.style.display = 'block';
+            
+            addNotification(`${currentUser} envió ${amount} dragos a ${recipient}`);
+        }
+        
+        // Funciones auxiliares
+        function updateBalanceDisplay() {
+            document.getElementById('balance-display').textContent = `${users[currentUser].balance} dragos`;
+        }
+        
+        function updateHistory() {
+            const container = document.getElementById('history-container');
+            container.innerHTML = '<h3>Tus transacciones</h3>';
+            
+            const userTransactions = transactions.filter(t => t.from === currentUser || t.to === currentUser);
+            
+            if(userTransactions.length === 0) {
+                container.innerHTML += '<p>No hay transacciones</p>';
+                return;
+            }
+            
+            userTransactions.forEach(t => {
+                const div = document.createElement('div');
+                div.className = 'notification';
+                div.textContent = t.from === currentUser 
+                    ? `Enviaste ${t.amount} dragos a ${t.to} (${t.concept}) - ${t.date}`
+                    : `Recibiste ${t.amount} dragos de ${t.from} (${t.concept}) - ${t.date}`;
+                container.appendChild(div);
+            });
+        }
+        
+        function addNotification(text) {
+            const container = document.getElementById('notifications-container');
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = text;
+            container.appendChild(notification);
+        }
+        
+        function addAdminNotification(text) {
+            const container = document.getElementById('admin-notifications-container');
+            const notification = document.createElement('div');
+            notification.className = 'notification admin-notification';
+            notification.textContent = text;
+            container.appendChild(notification);
+        }
+        
+        function updateUsersList() {
+            const container = document.getElementById('users-list');
+            container.innerHTML = '';
+            
+            for(const username in users) {
+                const div = document.createElement('div');
+                div.className = 'notification';
+                div.textContent = `${username}: ${users[username].balance} dragos (${users[username].isAdmin ? 'Admin' : 'Usuario'})`;
+                container.appendChild(div);
+            }
+        }
+        
+        function createUser() {
+            const username = document.getElementById('new-username').value;
+            const password = document.getElementById('new-password').value;
+            
+            if(!username || !password) {
+                addAdminNotification('Completa todos los campos');
+                return;
+            }
+            
+            if(users[username]) {
+                addAdminNotification('Usuario ya existe');
+                return;
+            }
+            
+            users[username] = { password: password, balance: 1000, isAdmin: false };
+            updateUsersList();
+            addAdminNotification(`Nuevo usuario: ${username}`);
+            document.getElementById('new-username').value = '';
+            document.getElementById('new-password').value = '';
+        }
+    </script>
+</body>
+</html>

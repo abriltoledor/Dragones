@@ -188,6 +188,13 @@
             padding: 8px 15px;
             display: inline-block;
         }
+        .sync-section {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -298,6 +305,15 @@
                 <h3>Notificaciones</h3>
             </div>
             
+            <!-- Sección de Sincronización -->
+            <div class="sync-section">
+                <h3>Sincronizar Datos</h3>
+                <button onclick="exportData()">Exportar Datos</button>
+                <input type="file" id="import-file" accept=".json" style="display: none;" onchange="importData(event)">
+                <button onclick="document.getElementById('import-file').click()">Importar Datos</button>
+                <p id="sync-message" style="display:none; margin-top:10px;"></p>
+            </div>
+            
             <!-- Sección de Administración -->
             <div id="admin-section" class="admin-section" style="display:none;">
                 <h3>Panel de Administración</h3>
@@ -329,14 +345,20 @@
         const ADMIN_USER = "admin";
         const ADMIN_PASS = "admin123";
         
-        // Base de datos simulada
-        let users = {
+        // Cargar datos desde localStorage o usar valores por defecto
+        let users = JSON.parse(localStorage.getItem('dragonesUsers')) || {
             "admin": { password: ADMIN_PASS, balance: 5000, isAdmin: true },
             "usuario1": { password: "clave123", balance: 1000, isAdmin: false }
         };
         
+        let transactions = JSON.parse(localStorage.getItem('dragonesTransactions')) || [];
         let currentUser = "";
-        let transactions = [];
+        
+        // Función para guardar datos en localStorage
+        function saveData() {
+            localStorage.setItem('dragonesUsers', JSON.stringify(users));
+            localStorage.setItem('dragonesTransactions', JSON.stringify(transactions));
+        }
         
         // Función para cambiar entre pestañas
         function openTab(event, tabName) {
@@ -408,6 +430,7 @@
             };
             
             transactions.push(transaction);
+            saveData();
             updateHistory();
             
             addNotification(`✅ ¡Compra exitosa! Hamo-chan (${typeName}) para el ${day} por ${cost} dragos`);
@@ -426,6 +449,7 @@
             if(code === "DRAGON2023") {
                 users[currentUser].balance += 200;
                 updateBalanceDisplay();
+                saveData();
                 message.textContent = "¡Código canjeado! +200 dragos añadidos";
                 message.style.color = "#4CAF50";
                 
@@ -437,6 +461,7 @@
             else if(code === "HAMOCHAN") {
                 users[currentUser].balance += 100;
                 updateBalanceDisplay();
+                saveData();
                 message.textContent = "¡Código especial Hamo-chan! +100 dragos";
                 message.style.color = "#4CAF50";
             }
@@ -486,6 +511,7 @@
             };
             
             transactions.push(transaction);
+            saveData();
             updateBalanceDisplay();
             updateHistory();
             
@@ -493,6 +519,85 @@
             message.style.display = 'block';
             
             addNotification(`${currentUser} envió ${amount} dragos a ${recipient}`);
+        }
+        
+        // Función para crear usuario
+        function createUser() {
+            const username = document.getElementById('new-username').value;
+            const password = document.getElementById('new-password').value;
+            
+            if(!username || !password) {
+                addAdminNotification('Completa todos los campos');
+                return;
+            }
+            
+            if(users[username]) {
+                addAdminNotification('Usuario ya existe');
+                return;
+            }
+            
+            users[username] = { password: password, balance: 1000, isAdmin: false };
+            saveData();
+            updateUsersList();
+            addAdminNotification(`Nuevo usuario: ${username}`);
+            document.getElementById('new-username').value = '';
+            document.getElementById('new-password').value = '';
+        }
+        
+        // Función para exportar datos
+        function exportData() {
+            const data = {
+                users: users,
+                transactions: transactions
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'datos-dragones.json';
+            a.click();
+            
+            document.getElementById('sync-message').textContent = "Datos exportados correctamente";
+            document.getElementById('sync-message').style.color = "#4CAF50";
+            document.getElementById('sync-message').style.display = "block";
+        }
+        
+        // Función para importar datos
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (data.users && data.transactions) {
+                        users = data.users;
+                        transactions = data.transactions;
+                        saveData();
+                        
+                        // Actualizar la interfaz
+                        if (currentUser) {
+                            updateBalanceDisplay();
+                            updateHistory();
+                            updateUsersList();
+                        }
+                        
+                        document.getElementById('sync-message').textContent = "Datos importados correctamente!";
+                        document.getElementById('sync-message').style.color = "#4CAF50";
+                    } else {
+                        document.getElementById('sync-message').textContent = "Archivo no válido";
+                        document.getElementById('sync-message').style.color = "#f44336";
+                    }
+                } catch (error) {
+                    document.getElementById('sync-message').textContent = "Error al importar datos";
+                    document.getElementById('sync-message').style.color = "#f44336";
+                    console.error(error);
+                }
+                document.getElementById('sync-message').style.display = "block";
+            };
+            reader.readAsText(file);
         }
         
         // Funciones auxiliares
@@ -547,27 +652,6 @@
                 div.textContent = `${username}: ${users[username].balance} dragos (${users[username].isAdmin ? 'Admin' : 'Usuario'})`;
                 container.appendChild(div);
             }
-        }
-        
-        function createUser() {
-            const username = document.getElementById('new-username').value;
-            const password = document.getElementById('new-password').value;
-            
-            if(!username || !password) {
-                addAdminNotification('Completa todos los campos');
-                return;
-            }
-            
-            if(users[username]) {
-                addAdminNotification('Usuario ya existe');
-                return;
-            }
-            
-            users[username] = { password: password, balance: 1000, isAdmin: false };
-            updateUsersList();
-            addAdminNotification(`Nuevo usuario: ${username}`);
-            document.getElementById('new-username').value = '';
-            document.getElementById('new-password').value = '';
         }
     </script>
 </body>

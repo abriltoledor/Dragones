@@ -195,6 +195,10 @@
             border-radius: 5px;
             text-align: center;
         }
+        .unread-notification {
+            background-color: #ffebee;
+            border-left: 4px solid #f44336;
+        }
     </style>
 </head>
 <body>
@@ -247,7 +251,7 @@
                 </div>
                 
                 <div class="input-group">
-                    <label>Fronsteria (Concepto)</label>
+                    <label>Concepto</label>
                     <select id="concept">
                         <option value="pago-servicios">Pago de servicios</option>
                         <option value="transferencia">Transferencia personal</option>
@@ -342,24 +346,58 @@
 
     <script>
         // Datos de la aplicación
-        const ADMIN_USER = "admin";
-        const ADMIN_PASS = "admin123";
-        
-        // Cargar datos desde localStorage o usar valores por defecto
-        let users = JSON.parse(localStorage.getItem('dragonesUsers')) || {
-            "admin": { password: ADMIN_PASS, balance: 5000, isAdmin: true },
-            "usuario1": { password: "clave123", balance: 1000, isAdmin: false }
+        const users = {
+            "altoledo": { 
+                password: "admin123", 
+                balance: 5000, 
+                isAdmin: true,
+                notifications: [] 
+            },
+            "sbecerra": { 
+                password: "admin123", 
+                balance: 5000, 
+                isAdmin: true 
+            },
+            "dmarangon": { 
+                password: "clave123", 
+                balance: 1000, 
+                isAdmin: false 
+            },
+            "aguillen": { 
+                password: "clave123", 
+                balance: 1000, 
+                isAdmin: false 
+            }
         };
-        
-        let transactions = JSON.parse(localStorage.getItem('dragonesTransactions')) || [];
+
+        let transactions = [];
         let currentUser = "";
-        
-        // Función para guardar datos en localStorage
+
+        // Cargar datos guardados al iniciar
+        function loadData() {
+            const savedUsers = localStorage.getItem('dragonesUsers');
+            const savedTransactions = localStorage.getItem('dragonesTransactions');
+            
+            if(savedUsers) {
+                const parsedUsers = JSON.parse(savedUsers);
+                // Conservar las notificaciones existentes al cargar
+                if(users.altoledo && parsedUsers.altoledo?.notifications) {
+                    users.altoledo.notifications = parsedUsers.altoledo.notifications;
+                }
+                Object.assign(users, parsedUsers);
+            }
+            
+            if(savedTransactions) {
+                transactions = JSON.parse(savedTransactions);
+            }
+        }
+
+        // Guardar datos
         function saveData() {
             localStorage.setItem('dragonesUsers', JSON.stringify(users));
             localStorage.setItem('dragonesTransactions', JSON.stringify(transactions));
         }
-        
+
         // Función para cambiar entre pestañas
         function openTab(event, tabName) {
             const tabs = document.getElementsByClassName('tab');
@@ -400,13 +438,14 @@
                 }
                 
                 addNotification(`¡Bienvenido ${username}! Tu saldo es ${users[currentUser].balance} dragos`);
+                loadNotifications();
             } else {
                 message.textContent = "Usuario o clave incorrectos";
                 message.style.display = 'block';
             }
         }
         
-        // Función para comprar manga Hamo-chan
+        // Función para comprar manga Hamo-chan (CON NOTIFICACIONES PARA ALTOLEDO)
         function comprarManga() {
             const edition = document.getElementById('manga-edition').value;
             const cost = edition === 'adelantado' ? 600 : 400;
@@ -435,8 +474,50 @@
             
             addNotification(`✅ ¡Compra exitosa! Hamo-chan (${typeName}) para el ${day} por ${cost} dragos`);
             
-            if(users[currentUser]?.isAdmin) {
-                addAdminNotification(`📦 ${currentUser} compró Hamo-chan (${typeName})`);
+            // Notificar a altoledo sobre la compra
+            if (users["altoledo"] && currentUser !== "altoledo") {
+                if (!users["altoledo"].notifications) {
+                    users["altoledo"].notifications = [];
+                }
+                
+                users["altoledo"].notifications.push({
+                    date: new Date().toLocaleString(),
+                    message: `📢 ${currentUser} compró Hamo-chan (${typeName}) por ${cost} dragos`,
+                    read: false
+                });
+                
+                saveData();
+                
+                // Si altoledo está logueado actualmente, mostrar notificación en tiempo real
+                if (currentUser === "altoledo") {
+                    const container = document.getElementById('notifications-container');
+                    const notification = document.createElement('div');
+                    notification.className = 'notification unread-notification';
+                    notification.textContent = `[Ahora] 📢 ${currentUser} compró Hamo-chan (${typeName})`;
+                    container.insertBefore(notification, container.children[1]);
+                }
+            }
+        }
+        
+        // Función para cargar notificaciones
+        function loadNotifications() {
+            const container = document.getElementById('notifications-container');
+            // Limpiar notificaciones excepto el título
+            while(container.children.length > 1) {
+                container.removeChild(container.lastChild);
+            }
+            
+            if (users[currentUser]?.notifications) {
+                users[currentUser].notifications.forEach(notif => {
+                    const div = document.createElement('div');
+                    div.className = notif.read ? 'notification' : 'notification unread-notification';
+                    div.textContent = `[${notif.date}] ${notif.message}`;
+                    container.appendChild(div);
+                    
+                    // Marcar como leída
+                    notif.read = true;
+                });
+                saveData();
             }
         }
         
@@ -445,7 +526,6 @@
             const code = document.getElementById('promo-code').value;
             const message = document.getElementById('code-message');
             
-            // Verificar código (puedes agregar más códigos aquí)
             if(code === "DRAGON2023") {
                 users[currentUser].balance += 200;
                 updateBalanceDisplay();
@@ -453,7 +533,6 @@
                 message.textContent = "¡Código canjeado! +200 dragos añadidos";
                 message.style.color = "#4CAF50";
                 
-                // Redirigir después de 2 segundos
                 setTimeout(() => {
                     window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
                 }, 2000);
@@ -573,14 +652,13 @@
                     const data = JSON.parse(e.target.result);
                     
                     if (data.users && data.transactions) {
-                        users = data.users;
+                        Object.assign(users, data.users);
                         transactions = data.transactions;
                         saveData();
                         
-                        // Actualizar la interfaz
-                        if (currentUser) {
-                            updateBalanceDisplay();
-                            updateHistory();
+                        updateBalanceDisplay();
+                        updateHistory();
+                        if(users[currentUser]?.isAdmin) {
                             updateUsersList();
                         }
                         
@@ -653,6 +731,12 @@
                 container.appendChild(div);
             }
         }
+        
+        // Cargar datos al iniciar
+        window.onload = function() {
+            loadData();
+            console.log("Aplicación lista. Usuarios disponibles:", Object.keys(users));
+        };
     </script>
 </body>
 </html>
